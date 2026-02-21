@@ -179,31 +179,24 @@ export default function AudioChat({ socket, gameState, send }: AudioChatProps) {
     return () => socket.removeEventListener("message", handleMessage);
   }, [socket, audioEnabled, createPeerConnection]);
 
-  // Push to talk handlers
-  const startTalking = useCallback(() => {
+  // Toggle mic on/off
+  const toggleMic = useCallback(() => {
     if (!localStreamRef.current) return;
+    
+    const newTalkingState = !isTalking;
     localStreamRef.current.getAudioTracks().forEach((track) => {
-      track.enabled = true;
+      track.enabled = newTalkingState;
     });
-    setIsTalking(true);
-    send({ type: "audio_state", talking: true });
-  }, [send]);
+    setIsTalking(newTalkingState);
+    send({ type: "audio_state", talking: newTalkingState });
+  }, [isTalking, send]);
 
-  const stopTalking = useCallback(() => {
-    if (!localStreamRef.current) return;
-    localStreamRef.current.getAudioTracks().forEach((track) => {
-      track.enabled = false;
-    });
-    setIsTalking(false);
-    send({ type: "audio_state", talking: false });
-  }, [send]);
-
-  // Keyboard push-to-talk (Space key)
+  // Keyboard shortcut (M key to toggle mic)
   useEffect(() => {
     if (!audioEnabled) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" && !e.repeat && !isTalking) {
+      if (e.code === "KeyM" && !e.repeat) {
         // Don't trigger if typing in an input
         if (
           e.target instanceof HTMLInputElement ||
@@ -211,25 +204,16 @@ export default function AudioChat({ socket, gameState, send }: AudioChatProps) {
         )
           return;
         e.preventDefault();
-        startTalking();
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === "Space") {
-        e.preventDefault();
-        stopTalking();
+        toggleMic();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [audioEnabled, isTalking, startTalking, stopTalking]);
+  }, [audioEnabled, toggleMic]);
 
   // Cleanup
   useEffect(() => {
@@ -254,27 +238,17 @@ export default function AudioChat({ socket, gameState, send }: AudioChatProps) {
         </button>
       ) : (
         <button
-          onMouseDown={startTalking}
-          onMouseUp={stopTalking}
-          onMouseLeave={stopTalking}
-          onTouchStart={(e) => {
-            e.preventDefault();
-            startTalking();
-          }}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            stopTalking();
-          }}
+          onClick={toggleMic}
           className={`ptt-button ${isTalking ? "active" : ""}`}
-          title="Hold to talk (or hold Space)"
+          title={isTalking ? "Click to mute (or press M)" : "Click to unmute (or press M)"}
         >
-          <span className="text-xl">{isTalking ? "🗣️" : "🎙️"}</span>
+          <span className="text-xl">{isTalking ? "🎙️" : "🔇"}</span>
         </button>
       )}
 
       {audioEnabled && (
         <div className="absolute -top-8 right-0 text-[10px] text-gray-500 font-body whitespace-nowrap">
-          {isTalking ? "🔴 Talking..." : "Hold to talk"}
+          {isTalking ? "🔴 Mic On" : "Mic Off"}
         </div>
       )}
 
