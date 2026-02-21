@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { GameState, ROLE_INFO, Role } from "@/lib/types";
+import { playDealSound } from "@/lib/sounds";
 
 interface DealingPhaseProps {
   gameState: GameState;
@@ -12,7 +13,10 @@ export default function DealingPhase({ gameState }: DealingPhaseProps) {
   const myRole = gameState.players[gameState.yourId!]?.role;
 
   useEffect(() => {
-    const timer = setTimeout(() => setFlipped(true), 800);
+    const timer = setTimeout(() => {
+      setFlipped(true);
+      playDealSound();
+    }, 800);
     return () => clearTimeout(timer);
   }, []);
 

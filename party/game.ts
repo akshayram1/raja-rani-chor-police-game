@@ -272,12 +272,17 @@ export default class GameServer implements Party.Server {
   handleStartRound(senderId: string) {
     if (senderId !== this.state.hostId) return;
 
-    const playerIds = Object.keys(this.state.players);
-    const playerCount = playerIds.length;
-
+    const playerCount = Object.keys(this.state.players).length;
     if (playerCount < 4) {
       return; // Need at least 4 players
     }
+
+    this.startRoundInternal();
+  }
+
+  startRoundInternal() {
+    const playerIds = Object.keys(this.state.players);
+    const playerCount = playerIds.length;
 
     this.state.round += 1;
     this.state.phase = "dealing";
@@ -397,13 +402,8 @@ export default class GameServer implements Party.Server {
 
   autoNextRound() {
     this.clearNextRoundTimer();
-    this.state.phase = "lobby";
-    this.state.currentRoles = {};
-    this.state.policeId = undefined;
-    this.state.pradhanId = undefined;
-    this.state.policeGuess = undefined;
-    this.state.guessCorrect = undefined;
-    this.broadcastState();
+    // Directly start next round (skip lobby)
+    this.startRoundInternal();
   }
 
   handleNextRound(senderId: string) {
@@ -415,13 +415,8 @@ export default class GameServer implements Party.Server {
       this.broadcastState();
       return;
     }
-    this.state.phase = "lobby";
-    this.state.currentRoles = {};
-    this.state.policeId = undefined;
-    this.state.pradhanId = undefined;
-    this.state.policeGuess = undefined;
-    this.state.guessCorrect = undefined;
-    this.broadcastState();
+    // Directly start next round (skip lobby)
+    this.startRoundInternal();
   }
 
   handleEndGame(senderId: string) {

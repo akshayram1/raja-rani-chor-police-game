@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { GameState, ROLE_INFO } from "@/lib/types";
+import { playTimerBeep } from "@/lib/sounds";
 
 interface PoliceGuessPhaseProps {
   gameState: GameState;
@@ -13,6 +14,7 @@ function useCountdown(deadline?: number) {
     if (!deadline) return 0;
     return Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
   });
+  const lastBeep = useRef(0);
 
   useEffect(() => {
     if (!deadline) return;
@@ -20,6 +22,11 @@ function useCountdown(deadline?: number) {
     const update = () => {
       const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
       setSecondsLeft(remaining);
+      // Beep at 5, 4, 3, 2, 1
+      if (remaining > 0 && remaining <= 5 && remaining !== lastBeep.current) {
+        lastBeep.current = remaining;
+        playTimerBeep();
+      }
     };
 
     update();

@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { GameState, ROLE_INFO, Role } from "@/lib/types";
+import { playGameOverSound } from "@/lib/sounds";
 
 interface ScoreboardProps {
   gameState: GameState;
@@ -9,6 +11,10 @@ interface ScoreboardProps {
 }
 
 export default function Scoreboard({ gameState, isHost, send }: ScoreboardProps) {
+  useEffect(() => {
+    playGameOverSound();
+  }, []);
+
   const sortedPlayers = Object.values(gameState.players).sort(
     (a, b) => b.score - a.score
   );

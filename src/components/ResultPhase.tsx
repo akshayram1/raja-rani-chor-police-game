@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GameState, ROLE_INFO, Role } from "@/lib/types";
+import { playCorrectSound, playWrongSound } from "@/lib/sounds";
 
 interface ResultPhaseProps {
   gameState: GameState;
@@ -27,8 +28,11 @@ export default function ResultPhase({
   useEffect(() => {
     if (correct) {
       setShowConfetti(true);
+      playCorrectSound();
       const timer = setTimeout(() => setShowConfetti(false), 3000);
       return () => clearTimeout(timer);
+    } else {
+      playWrongSound();
     }
   }, [correct]);
 
