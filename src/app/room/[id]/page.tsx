@@ -59,6 +59,9 @@ export default function RoomPage() {
         setGameState(data.data);
       } else if (data.type === "error") {
         setError(data.message);
+      } else if (data.type === "kicked") {
+        socket.close();
+        setError("You have been removed from the room by the host.");
       } else if (data.type === "audio_state") {
         setTalkingPlayers((prev) => {
           const next = new Set(prev);

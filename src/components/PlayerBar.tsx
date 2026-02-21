@@ -48,7 +48,7 @@ export default function PlayerBar({
                     send({ type: "kick_player", targetId: player.id });
                   }
                 }}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/80 hover:bg-red-500 text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/80 hover:bg-red-500 text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 max-sm:opacity-70 transition-opacity z-10"
                 title={`Remove ${player.name}`}
               >
                 ✕

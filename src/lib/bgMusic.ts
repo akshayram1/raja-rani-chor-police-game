@@ -169,14 +169,18 @@ export function stopBgMusic() {
   loopTimers.forEach(clearTimeout);
   loopTimers = [];
 
-  if (ctx) {
-    // Fade out
-    if (masterGain) {
-      masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
-      setTimeout(() => {
-        if (masterGain) masterGain.gain.value = 0.12;
-      }, 400);
-    }
+  if (ctx && masterGain) {
+    // Cancel any scheduled changes and set gain to 0 immediately
+    masterGain.gain.cancelScheduledValues(ctx.currentTime);
+    masterGain.gain.setValueAtTime(masterGain.gain.value, ctx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
+    // Close and reset the context so next start is fresh
+    const oldCtx = ctx;
+    setTimeout(() => {
+      oldCtx.close().catch(() => {});
+    }, 300);
+    ctx = null;
+    masterGain = null;
   }
 }
 

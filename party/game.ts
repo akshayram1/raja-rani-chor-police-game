@@ -287,17 +287,15 @@ export default class GameServer implements Party.Server {
         if (!targetId || targetId === sender.id) break; // can't kick yourself
         if (!this.state.players[targetId]) break;
 
-        // Remove player from state
-        delete this.state.players[targetId];
-
-        // Close their connection
+        // Send kicked message to target before removing
         for (const conn of this.room.getConnections()) {
           if (conn.id === targetId) {
-            conn.send(JSON.stringify({ type: "error", message: "You have been removed from the room by the host." }));
-            conn.close();
+            conn.send(JSON.stringify({ type: "kicked" }));
           }
         }
 
+        // Remove player from state
+        delete this.state.players[targetId];
         this.broadcastState();
         break;
       }
