@@ -26,6 +26,7 @@ export default function RoomPage() {
   const [talkingPlayers, setTalkingPlayers] = useState<Set<string>>(new Set());
   const emojiRef = useRef<EmojiReactionsHandle | null>(null);
   const [musicOn, setMusicOn] = useState(false);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   const toggleMusic = useCallback(() => {
     if (musicOn) {
@@ -146,6 +147,15 @@ export default function RoomPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* How to Play */}
+          <button
+            onClick={() => setShowHowToPlay(true)}
+            className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-xs text-gray-400 hover:text-white font-body transition-all flex items-center gap-1"
+            title="How to Play"
+          >
+            <span>❓</span>
+            <span className="hidden sm:inline">How to Play</span>
+          </button>
           {/* Music toggle */}
           <button
             onClick={toggleMusic}
@@ -229,6 +239,69 @@ export default function RoomPage() {
         gameState={gameState}
         send={send}
       />
+
+      {/* How to Play modal */}
+      {showHowToPlay && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setShowHowToPlay(false)}
+        >
+          <div
+            className="game-card p-6 max-w-md w-full max-h-[80vh] overflow-y-auto animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-xl text-white">How to Play</h2>
+              <button
+                onClick={() => setShowHowToPlay(false)}
+                className="text-gray-400 hover:text-white text-xl transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-sm font-body text-gray-300">
+              <div>
+                <h3 className="text-white font-bold mb-1">🎯 Goal</h3>
+                <p>Score the most points across all rounds. Each round, cards are dealt assigning secret roles.</p>
+              </div>
+
+              <div>
+                <h3 className="text-white font-bold mb-1">🃏 Roles (5 players)</h3>
+                <ul className="space-y-1 ml-1">
+                  <li>👑 <span className="text-yellow-400">Raja</span> — 1000 pts</li>
+                  <li>👸 <span className="text-pink-400">Rani</span> — 900 pts</li>
+                  <li>🏛️ <span className="text-amber-600">Pradhan</span> — 800 pts</li>
+                  <li>🚔 <span className="text-blue-400">Police</span> — 700 pts (if guess correct)</li>
+                  <li>🦹 <span className="text-gray-400">Chor</span> — 0 pts (or 700 if police guesses wrong)</li>
+                </ul>
+                <p className="mt-1 text-gray-500 text-xs">With 4 players, Pradhan is removed.</p>
+              </div>
+
+              <div>
+                <h3 className="text-white font-bold mb-1">📋 Round Flow</h3>
+                <ol className="space-y-1 ml-4 list-decimal">
+                  <li>Cards are dealt — only you see your role</li>
+                  <li>Pradhan reveals themselves</li>
+                  <li>Police reveals themselves</li>
+                  <li>Police has 30s to guess who the Chor is</li>
+                  <li>Points are awarded, next round begins</li>
+                </ol>
+              </div>
+
+              <div>
+                <h3 className="text-white font-bold mb-1">💡 Tips</h3>
+                <ul className="space-y-1 ml-4 list-disc">
+                  <li>Use voice chat & text chat to bluff or deduce!</li>
+                  <li>Send emoji reactions for fun 🔥</li>
+                  <li>Host can set number of rounds & player count</li>
+                  <li>If police runs out of time, a random guess is made</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -1,5 +1,8 @@
 {
   "name": "raja-rani-game",
   "main": "party/game.ts",
+  "parties": {
+    "lobby": "party/lobby.ts"
+  },
   "compatibilityDate": "2024-01-01"
 }

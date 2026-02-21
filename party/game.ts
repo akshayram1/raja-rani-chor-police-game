@@ -138,11 +138,13 @@ function sanitizeStateForPlayer(state: GameState, playerId: string) {
 // ─── Server ──────────────────────────────────────────────────────────
 const POLICE_GUESS_TIMER = 30; // seconds
 const NEXT_ROUND_TIMER = 10; // seconds before auto-advancing
+const DISCONNECT_REMOVE_DELAY = 15_000; // 15 seconds before removing disconnected player
 
 export default class GameServer implements Party.Server {
   state: GameState;
   policeTimerHandle?: ReturnType<typeof setTimeout>;
   nextRoundTimerHandle?: ReturnType<typeof setTimeout>;
+  disconnectTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
   constructor(readonly room: Party.Room) {
     this.state = getInitialState();
@@ -156,6 +158,12 @@ export default class GameServer implements Party.Server {
     // If player was already in the game (reconnection)
     if (this.state.players[playerId]) {
       this.state.players[playerId].connected = true;
+      // Cancel pending disconnect removal
+      const timer = this.disconnectTimers.get(playerId);
+      if (timer) {
+        clearTimeout(timer);
+        this.disconnectTimers.delete(playerId);
+      }
     } else if (this.state.phase === "lobby") {
       // New player joining lobby
       const playerCount = Object.keys(this.state.players).length;
@@ -189,8 +197,63 @@ export default class GameServer implements Party.Server {
   onClose(conn: Party.Connection) {
     if (this.state.players[conn.id]) {
       this.state.players[conn.id].connected = false;
-      this.broadcastState();
+      this.broadcastState(); // This also calls notifyLobby
+
+      // Start a timer to fully remove the player if they don't reconnect
+      const playerId = conn.id;
+      const timer = setTimeout(() => {
+        this.disconnectTimers.delete(playerId);
+        this.removePlayer(playerId);
+      }, DISCONNECT_REMOVE_DELAY);
+      this.disconnectTimers.set(playerId, timer);
     }
+  }
+
+  removePlayer(playerId: string) {
+    if (!this.state.players[playerId]) return;
+
+    // Notify the player they're being removed (in case they're still half-open)
+    for (const conn of this.room.getConnections()) {
+      if (conn.id === playerId) {
+        conn.send(JSON.stringify({ type: "kicked" }));
+      }
+    }
+
+    delete this.state.players[playerId];
+
+    // Transfer host if the removed player was host
+    if (this.state.hostId === playerId) {
+      const connectedPlayers = Object.values(this.state.players).filter(p => p.connected);
+      this.state.hostId = connectedPlayers.length > 0 ? connectedPlayers[0].id : null;
+    }
+
+    // If no players left, reset the room
+    const remaining = Object.keys(this.state.players).length;
+    if (remaining === 0) {
+      this.clearNextRoundTimer();
+      if (this.policeTimerHandle) clearTimeout(this.policeTimerHandle);
+      this.state = getInitialState();
+      this.notifyLobby();
+      return;
+    }
+
+    // If mid-game and too few players, go back to lobby
+    if (this.state.phase !== "lobby" && this.state.phase !== "scoreboard" && remaining < 4) {
+      this.clearNextRoundTimer();
+      if (this.policeTimerHandle) {
+        clearTimeout(this.policeTimerHandle);
+        this.policeTimerHandle = undefined;
+      }
+      this.state.phase = "lobby";
+      this.state.round = 0;
+      this.state.currentRoles = {};
+      this.state.policeId = undefined;
+      this.state.pradhanId = undefined;
+      this.state.policeGuess = undefined;
+      this.state.guessCorrect = undefined;
+    }
+
+    this.broadcastState();
   }
 
   onMessage(message: string, sender: Party.Connection) {
@@ -479,6 +542,43 @@ export default class GameServer implements Party.Server {
       const sanitized = sanitizeStateForPlayer(this.state, conn.id);
       sanitized.yourId = conn.id;
       conn.send(JSON.stringify({ type: "state", data: sanitized }));
+    }
+    this.notifyLobby();
+  }
+
+  async notifyLobby() {
+    try {
+      const connectedPlayers = Object.values(this.state.players).filter(
+        (p) => p.connected
+      );
+      const playerCount = connectedPlayers.length;
+
+      if (playerCount === 0) {
+        // Remove from lobby
+        await this.room.context.parties.lobby
+          .get("main")
+          .fetch({ method: "POST", body: JSON.stringify({ action: "remove", roomId: this.room.id }) });
+      } else {
+        const hostName =
+          this.state.hostId && this.state.players[this.state.hostId]
+            ? this.state.players[this.state.hostId].name
+            : "Unknown";
+        await this.room.context.parties.lobby.get("main").fetch({
+          method: "POST",
+          body: JSON.stringify({
+            action: "update",
+            roomId: this.room.id,
+            playerCount,
+            maxPlayers: this.state.maxPlayers,
+            phase: this.state.phase,
+            hostName,
+            round: this.state.round,
+            totalRounds: this.state.totalRounds,
+          }),
+        });
+      }
+    } catch (e) {
+      // Silently ignore lobby notification failures
     }
   }
 

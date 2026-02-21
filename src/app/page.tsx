@@ -1,7 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import PartySocket from "partysocket";
+import { PARTYKIT_HOST } from "@/lib/types";
+
+interface RoomInfo {
+  id: string;
+  playerCount: number;
+  maxPlayers: number;
+  phase: string;
+  hostName: string;
+  round: number;
+  totalRounds: number;
+  updatedAt: number;
+}
 
 function generateRoomId() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -12,11 +25,53 @@ function generateRoomId() {
   return result;
 }
 
+function phaseLabel(phase: string): { text: string; color: string } {
+  switch (phase) {
+    case "lobby":
+      return { text: "Waiting", color: "text-green-400" };
+    case "dealing":
+    case "reveal_pradhan":
+    case "reveal_police":
+    case "police_guess":
+    case "result":
+      return { text: "In Game", color: "text-yellow-400" };
+    case "scoreboard":
+      return { text: "Finished", color: "text-gray-400" };
+    default:
+      return { text: phase, color: "text-gray-400" };
+  }
+}
+
 export default function HomePage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"home" | "create" | "join">("home");
+  const [rooms, setRooms] = useState<RoomInfo[]>([]);
+  const socketRef = useRef<PartySocket | null>(null);
+
+  // Connect to lobby for real-time room list
+  useEffect(() => {
+    const socket = new PartySocket({
+      host: PARTYKIT_HOST,
+      party: "lobby",
+      room: "main",
+    });
+
+    socket.addEventListener("message", (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "rooms") {
+          setRooms(msg.rooms);
+        }
+      } catch {}
+    });
+
+    socketRef.current = socket;
+    return () => {
+      socket.close();
+    };
+  }, []);
 
   const handleCreate = () => {
     if (!name.trim()) return;
@@ -30,6 +85,25 @@ export default function HomePage() {
     localStorage.setItem("playerName", name.trim());
     router.push(`/room/${joinCode.trim().toUpperCase()}`);
   };
+
+  const handleJoinRoom = (roomId: string) => {
+    const playerName = name.trim() || localStorage.getItem("playerName");
+    if (!playerName) {
+      // Prompt for name first
+      setJoinCode(roomId);
+      setMode("join");
+      return;
+    }
+    localStorage.setItem("playerName", playerName);
+    router.push(`/room/${roomId}`);
+  };
+
+  // Sort rooms: lobby rooms first, then by player count desc
+  const sortedRooms = [...rooms].sort((a, b) => {
+    if (a.phase === "lobby" && b.phase !== "lobby") return -1;
+    if (a.phase !== "lobby" && b.phase === "lobby") return 1;
+    return b.playerCount - a.playerCount;
+  });
 
   return (
     <main className="relative z-10 min-h-screen flex items-center justify-center p-4">
@@ -87,6 +161,62 @@ export default function HomePage() {
                 </div>
               </div>
             </button>
+
+            {/* Active Rooms Section */}
+            {sortedRooms.length > 0 && (
+              <div className="mt-8">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <h3 className="text-gray-300 font-body text-sm font-semibold uppercase tracking-wider">
+                    Active Rooms ({sortedRooms.length})
+                  </h3>
+                </div>
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1 scrollbar-thin">
+                  {sortedRooms.map((room) => {
+                    const status = phaseLabel(room.phase);
+                    const canJoin =
+                      room.phase === "lobby" &&
+                      room.playerCount < room.maxPlayers;
+                    return (
+                      <div
+                        key={room.id}
+                        className="game-card p-4 flex items-center justify-between gap-3"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-white font-bold text-sm tracking-wider">
+                              {room.id}
+                            </span>
+                            <span
+                              className={`text-xs font-body ${status.color}`}
+                            >
+                              {status.text}
+                            </span>
+                          </div>
+                          <div className="text-gray-500 text-xs font-body mt-0.5 truncate">
+                            Host: {room.hostName} •{" "}
+                            {room.phase !== "lobby" &&
+                              `Round ${room.round}/${room.totalRounds} • `}
+                            {room.playerCount}/{room.maxPlayers} players
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleJoinRoom(room.id)}
+                          disabled={!canJoin}
+                          className={`px-4 py-1.5 rounded-lg text-xs font-bold font-body transition-all whitespace-nowrap ${
+                            canJoin
+                              ? "bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30"
+                              : "bg-white/5 text-gray-600 cursor-not-allowed border border-white/5"
+                          }`}
+                        >
+                          {canJoin ? "Join" : room.phase === "lobby" ? "Full" : "In Game"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
