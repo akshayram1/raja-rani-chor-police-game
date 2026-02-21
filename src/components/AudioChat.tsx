@@ -12,6 +12,7 @@ interface AudioChatProps {
 export default function AudioChat({ socket, gameState, send }: AudioChatProps) {
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
+  const [micMode, setMicMode] = useState<"off" | "toggle" | "ptt">("off"); // off = muted, toggle = toggled on, ptt = push-to-talk active
   const [micPermission, setMicPermission] = useState<
     "prompt" | "granted" | "denied"
   >("prompt");
@@ -183,32 +184,47 @@ export default function AudioChat({ socket, gameState, send }: AudioChatProps) {
   const toggleMic = useCallback(() => {
     if (!localStreamRef.current) return;
     
-    const newTalkingState = !isTalking;
-    localStreamRef.current.getAudioTracks().forEach((track) => {
-      track.enabled = newTalkingState;
-    });
-    setIsTalking(newTalkingState);
-    send({ type: "audio_state", talking: newTalkingState });
-  }, [isTalking, send]);
+    if (micMode === "toggle") {
+      // Turn off
+      localStreamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = false;
+      });
+      setMicMode("off");
+      setIsTalking(false);
+      send({ type: "audio_state", talking: false });
+    } else {
+      // Turn on (also cancels PTT if active)
+      localStreamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = true;
+      });
+      setMicMode("toggle");
+      setIsTalking(true);
+      send({ type: "audio_state", talking: true });
+    }
+  }, [micMode, send]);
 
   // Push-to-talk handlers
   const startTalking = useCallback(() => {
     if (!localStreamRef.current) return;
+    if (micMode === "toggle") return; // Already on via toggle, ignore PTT
     localStreamRef.current.getAudioTracks().forEach((track) => {
       track.enabled = true;
     });
+    setMicMode("ptt");
     setIsTalking(true);
     send({ type: "audio_state", talking: true });
-  }, [send]);
+  }, [micMode, send]);
 
   const stopTalking = useCallback(() => {
     if (!localStreamRef.current) return;
+    if (micMode !== "ptt") return; // Only stop if we're in PTT mode
     localStreamRef.current.getAudioTracks().forEach((track) => {
       track.enabled = false;
     });
+    setMicMode("off");
     setIsTalking(false);
     send({ type: "audio_state", talking: false });
-  }, [send]);
+  }, [micMode, send]);
 
   // Keyboard shortcuts: M to toggle, Space to push-to-talk
   useEffect(() => {
@@ -227,7 +243,7 @@ export default function AudioChat({ socket, gameState, send }: AudioChatProps) {
         toggleMic();
       }
 
-      if (e.code === "Space" && !e.repeat && !isTalking) {
+      if (e.code === "Space" && !e.repeat) {
         e.preventDefault();
         startTalking();
       }
@@ -247,7 +263,7 @@ export default function AudioChat({ socket, gameState, send }: AudioChatProps) {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [audioEnabled, isTalking, toggleMic, startTalking, stopTalking]);
+  }, [audioEnabled, toggleMic, startTalking, stopTalking]);
 
   // Cleanup
   useEffect(() => {
@@ -274,7 +290,7 @@ export default function AudioChat({ socket, gameState, send }: AudioChatProps) {
         <>
           {/* Status label */}
           <div className="text-[10px] text-gray-500 font-body whitespace-nowrap">
-            {isTalking ? "🔴 Mic On" : "Mic Off"}
+            {micMode === "toggle" ? "🔴 Mic On" : micMode === "ptt" ? "🔴 PTT" : "Mic Off"}
           </div>
 
           <div className="flex items-center gap-2">

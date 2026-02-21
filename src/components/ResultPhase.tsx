@@ -129,25 +129,39 @@ export default function ResultPhase({
 
       {/* Host controls */}
       {isHost && (
-        <div className="flex gap-3">
-          <button
-            onClick={() => send({ type: "next_round" })}
-            className="flex-1 py-3 rounded-xl font-bold font-body text-black bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 transition-all"
-          >
-            Next Round ▶️
-          </button>
-          <button
-            onClick={() => send({ type: "end_game" })}
-            className="px-5 py-3 rounded-xl font-bold font-body text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-all"
-          >
-            End Game
-          </button>
+        <div className="space-y-2">
+          <div className="text-center text-xs text-gray-500 font-body">
+            Round {gameState.round} of {gameState.totalRounds}
+          </div>
+          {gameState.round >= gameState.totalRounds ? (
+            <button
+              onClick={() => send({ type: "end_game" })}
+              className="w-full py-3 rounded-xl font-bold font-body text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 transition-all"
+            >
+              🏆 View Final Scoreboard
+            </button>
+          ) : (
+            <div className="flex gap-3">
+              <button
+                onClick={() => send({ type: "next_round" })}
+                className="flex-1 py-3 rounded-xl font-bold font-body text-black bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 transition-all"
+              >
+                Next Round ▶️
+              </button>
+              <button
+                onClick={() => send({ type: "end_game" })}
+                className="px-5 py-3 rounded-xl font-bold font-body text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-all"
+              >
+                End Game
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       {!isHost && (
         <p className="text-center text-gray-500 text-xs font-body">
-          Waiting for host to start next round...
+          Round {gameState.round} of {gameState.totalRounds} — Waiting for host...
         </p>
       )}
     </div>

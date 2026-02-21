@@ -1,10 +1,33 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { GameState, ROLE_INFO } from "@/lib/types";
 
 interface PoliceGuessPhaseProps {
   gameState: GameState;
   send: (data: any) => void;
+}
+
+function useCountdown(deadline?: number) {
+  const [secondsLeft, setSecondsLeft] = useState(() => {
+    if (!deadline) return 0;
+    return Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+  });
+
+  useEffect(() => {
+    if (!deadline) return;
+
+    const update = () => {
+      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+    };
+
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [deadline]);
+
+  return secondsLeft;
 }
 
 export default function PoliceGuessPhase({
@@ -13,6 +36,7 @@ export default function PoliceGuessPhase({
 }: PoliceGuessPhaseProps) {
   const isPolice = gameState.yourId === gameState.policeId;
   const playerCount = Object.keys(gameState.players).length;
+  const secondsLeft = useCountdown(gameState.policeGuessDeadline);
 
   // Suspects = everyone except police and pradhan
   const suspects = Object.values(gameState.players).filter((p) => {
@@ -25,6 +49,9 @@ export default function PoliceGuessPhase({
     ? gameState.players[gameState.policeId]
     : null;
 
+  const timerColor = secondsLeft <= 5 ? "text-red-400" : secondsLeft <= 10 ? "text-yellow-400" : "text-white";
+  const timerBg = secondsLeft <= 5 ? "bg-red-500/20 border-red-500/40" : secondsLeft <= 10 ? "bg-yellow-500/20 border-yellow-500/40" : "bg-white/10 border-white/10";
+
   if (isPolice) {
     return (
       <div className="w-full max-w-md space-y-6 animate-slide-up">
@@ -36,6 +63,15 @@ export default function PoliceGuessPhase({
           <p className="text-gray-400 font-body text-sm mt-2">
             Tap on the person you think is the Chor
           </p>
+        </div>
+
+        {/* Timer */}
+        <div className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border ${timerBg} transition-colors`}>
+          <span className="text-lg">⏱️</span>
+          <span className={`font-display text-2xl ${timerColor} transition-colors ${secondsLeft <= 5 ? "animate-pulse" : ""}`}>
+            {secondsLeft}s
+          </span>
+          {secondsLeft <= 5 && <span className="text-xs text-red-400 font-body">Hurry!</span>}
         </div>
 
         <div className="space-y-3">
@@ -77,6 +113,15 @@ export default function PoliceGuessPhase({
       <h2 className="font-display text-xl text-gray-300">
         {policePlayer?.name} is investigating...
       </h2>
+
+      {/* Timer for non-police */}
+      <div className={`flex items-center gap-2 py-2 px-4 rounded-xl border ${timerBg} transition-colors`}>
+        <span>⏱️</span>
+        <span className={`font-display text-xl ${timerColor} transition-colors ${secondsLeft <= 5 ? "animate-pulse" : ""}`}>
+          {secondsLeft}s
+        </span>
+      </div>
+
       <p className="text-gray-400 font-body text-sm text-center max-w-xs">
         The Police is deciding who the Chor is.
         {gameState.players[gameState.yourId!]?.role === "chor" && (

@@ -105,29 +105,60 @@ export default function Lobby({ gameState, isHost, roomId, send }: LobbyProps) {
 
       {/* Player count toggle (host only) */}
       {isHost && gameState.round === 0 && (
-        <div className="game-card p-4">
+        <div className="game-card p-4 space-y-4">
           <div className="text-xs text-gray-400 font-body mb-3">
-            Players per game:
+            Game Settings:
           </div>
-          <div className="flex gap-2">
-            {[4, 5].map((count) => (
-              <button
-                key={count}
-                onClick={() =>
-                  send({ type: "set_max_players", count })
-                }
-                className={`flex-1 py-2.5 rounded-xl text-sm font-body font-bold transition-all ${
-                  gameState.maxPlayers === count
-                    ? "bg-accent-gold/20 border border-accent-gold/40 text-accent-gold"
-                    : "bg-white/5 border border-white/5 text-gray-400 hover:bg-white/10"
-                }`}
-              >
-                {count} Players
-                <span className="block text-[10px] font-normal mt-0.5">
-                  {count === 4 ? "No Pradhan" : "With Pradhan"}
-                </span>
-              </button>
-            ))}
+
+          {/* Players per game */}
+          <div>
+            <div className="text-[11px] text-gray-500 font-body mb-2">
+              Players per game:
+            </div>
+            <div className="flex gap-2">
+              {[4, 5].map((count) => (
+                <button
+                  key={count}
+                  onClick={() =>
+                    send({ type: "set_max_players", count })
+                  }
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-body font-bold transition-all ${
+                    gameState.maxPlayers === count
+                      ? "bg-accent-gold/20 border border-accent-gold/40 text-accent-gold"
+                      : "bg-white/5 border border-white/5 text-gray-400 hover:bg-white/10"
+                  }`}
+                >
+                  {count} Players
+                  <span className="block text-[10px] font-normal mt-0.5">
+                    {count === 4 ? "No Pradhan" : "With Pradhan"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Total rounds */}
+          <div>
+            <div className="text-[11px] text-gray-500 font-body mb-2">
+              Total Rounds:
+            </div>
+            <div className="flex gap-2">
+              {[3, 5, 7, 10].map((rounds) => (
+                <button
+                  key={rounds}
+                  onClick={() =>
+                    send({ type: "set_total_rounds", rounds })
+                  }
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-body font-bold transition-all ${
+                    gameState.totalRounds === rounds
+                      ? "bg-accent-gold/20 border border-accent-gold/40 text-accent-gold"
+                      : "bg-white/5 border border-white/5 text-gray-400 hover:bg-white/10"
+                  }`}
+                >
+                  {rounds}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

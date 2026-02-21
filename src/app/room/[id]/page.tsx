@@ -13,6 +13,7 @@ import Scoreboard from "@/components/Scoreboard";
 import AudioChat from "@/components/AudioChat";
 import PlayerBar from "@/components/PlayerBar";
 import LeaderboardPanel from "@/components/LeaderboardPanel";
+import EmojiReactions, { EmojiReactionsHandle } from "@/components/EmojiReactions";
 
 export default function RoomPage() {
   const params = useParams();
@@ -22,6 +23,7 @@ export default function RoomPage() {
   const [connected, setConnected] = useState(false);
   const socketRef = useRef<PartySocket | null>(null);
   const [talkingPlayers, setTalkingPlayers] = useState<Set<string>>(new Set());
+  const emojiRef = useRef<EmojiReactionsHandle | null>(null);
 
   useEffect(() => {
     const name = localStorage.getItem("playerName") || "Player";
@@ -55,6 +57,8 @@ export default function RoomPage() {
           }
           return next;
         });
+      } else if (data.type === "emoji_reaction") {
+        emojiRef.current?.addFloatingEmoji(data.emoji, data.playerName);
       }
     });
 
@@ -180,6 +184,13 @@ export default function RoomPage() {
           <LeaderboardPanel gameState={gameState} />
         </div>
       </div>
+
+      {/* Emoji reactions */}
+      <EmojiReactions
+        ref={emojiRef}
+        send={send}
+        gameState={gameState}
+      />
 
       {/* Audio chat */}
       <AudioChat

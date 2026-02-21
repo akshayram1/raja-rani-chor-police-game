@@ -22,11 +22,13 @@ export interface GameState {
   players: Record<string, Player>;
   hostId: string | null;
   round: number;
+  totalRounds: number;
   maxPlayers: number;
   policeId?: string;
   pradhanId?: string;
   policeGuess?: string;
   guessCorrect?: boolean;
+  policeGuessDeadline?: number;
   yourId?: string;
 }
 
