@@ -14,6 +14,7 @@ import AudioChat from "@/components/AudioChat";
 import PlayerBar from "@/components/PlayerBar";
 import LeaderboardPanel from "@/components/LeaderboardPanel";
 import EmojiReactions, { EmojiReactionsHandle } from "@/components/EmojiReactions";
+import { startBgMusic, stopBgMusic } from "@/lib/bgMusic";
 
 export default function RoomPage() {
   const params = useParams();
@@ -24,6 +25,17 @@ export default function RoomPage() {
   const socketRef = useRef<PartySocket | null>(null);
   const [talkingPlayers, setTalkingPlayers] = useState<Set<string>>(new Set());
   const emojiRef = useRef<EmojiReactionsHandle | null>(null);
+  const [musicOn, setMusicOn] = useState(false);
+
+  const toggleMusic = useCallback(() => {
+    if (musicOn) {
+      stopBgMusic();
+      setMusicOn(false);
+    } else {
+      startBgMusic();
+      setMusicOn(true);
+    }
+  }, [musicOn]);
 
   useEffect(() => {
     const name = localStorage.getItem("playerName") || "Player";
@@ -131,6 +143,18 @@ export default function RoomPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Music toggle */}
+          <button
+            onClick={toggleMusic}
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all ${
+              musicOn
+                ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
+                : "bg-white/5 text-gray-500 hover:bg-white/10 hover:text-gray-300"
+            }`}
+            title={musicOn ? "Turn off music" : "Turn on music"}
+          >
+            {musicOn ? "🎵" : "🔇"}
+          </button>
           <div
             className={`w-2 h-2 rounded-full ${
               connected ? "bg-green-400" : "bg-red-400"
