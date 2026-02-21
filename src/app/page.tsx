@@ -301,7 +301,7 @@ export default function HomePage() {
 
         {/* Footer */}
         <p className="text-center text-gray-600 text-xs mt-8 font-body">
-          🇮🇳 Made with love • Best played with 4-5 friends
+          🇮🇳 Made with ❤️ by Akshay Chame • Best played with 4-5 friends
         </p>
       </div>
     </main>

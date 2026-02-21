@@ -232,4 +232,4 @@ vercel --prod
 
 ---
 
-Made with ❤️ for Indian game nights 🇮🇳
+Made with ❤️ by **Akshay Chame** 🇮🇳
