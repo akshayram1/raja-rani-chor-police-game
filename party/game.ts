@@ -266,6 +266,41 @@ export default class GameServer implements Party.Server {
           emoji: data.emoji,
         }));
         break;
+      case "chat_message": {
+        // Broadcast chat message to all players
+        const senderName = this.state.players[sender.id]?.name || "Player";
+        const text = String(data.text || "").slice(0, 200);
+        if (text) {
+          this.broadcast(JSON.stringify({
+            type: "chat_message",
+            playerId: sender.id,
+            playerName: senderName,
+            text,
+          }));
+        }
+        break;
+      }
+      case "kick_player": {
+        // Only host can kick
+        if (sender.id !== this.state.hostId) break;
+        const targetId = data.targetId;
+        if (!targetId || targetId === sender.id) break; // can't kick yourself
+        if (!this.state.players[targetId]) break;
+
+        // Remove player from state
+        delete this.state.players[targetId];
+
+        // Close their connection
+        for (const conn of this.room.getConnections()) {
+          if (conn.id === targetId) {
+            conn.send(JSON.stringify({ type: "error", message: "You have been removed from the room by the host." }));
+            conn.close();
+          }
+        }
+
+        this.broadcastState();
+        break;
+      }
     }
   }
 

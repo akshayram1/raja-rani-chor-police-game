@@ -59,6 +59,8 @@ export default function RoomPage() {
         });
       } else if (data.type === "emoji_reaction") {
         emojiRef.current?.addFloatingEmoji(data.emoji, data.playerName);
+      } else if (data.type === "chat_message") {
+        emojiRef.current?.addChatMessage(data.playerName, data.text);
       }
     });
 
@@ -147,6 +149,8 @@ export default function RoomPage() {
         hostId={gameState.hostId!}
         talkingPlayers={talkingPlayers}
         phase={gameState.phase}
+        isHost={isHost}
+        send={send}
       />
 
       {/* Main content area with leaderboard */}

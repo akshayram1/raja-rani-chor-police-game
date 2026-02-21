@@ -8,6 +8,8 @@ interface PlayerBarProps {
   hostId: string;
   talkingPlayers: Set<string>;
   phase: GamePhase;
+  isHost: boolean;
+  send: (data: any) => void;
 }
 
 export default function PlayerBar({
@@ -16,6 +18,8 @@ export default function PlayerBar({
   hostId,
   talkingPlayers,
   phase,
+  isHost,
+  send,
 }: PlayerBarProps) {
   const playerList = Object.values(players);
 
@@ -24,18 +28,33 @@ export default function PlayerBar({
       {playerList.map((player) => {
         const isTalking = talkingPlayers.has(player.id);
         const isYou = player.id === yourId;
-        const isHost = player.id === hostId;
+        const isPlayerHost = player.id === hostId;
         const showRole = player.role && phase !== "lobby" && phase !== "dealing";
 
         return (
           <div
             key={player.id}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl min-w-fit transition-all ${
+            className={`group relative flex items-center gap-2 px-3 py-2 rounded-xl min-w-fit transition-all ${
               isYou ? "bg-white/10 border border-white/10" : "bg-white/5"
             } ${isTalking ? "talking-ring" : ""} ${
               !player.connected ? "opacity-40" : ""
             }`}
           >
+            {/* Kick button (host only, not on self) */}
+            {isHost && !isYou && (
+              <button
+                onClick={() => {
+                  if (confirm(`Remove ${player.name} from the room?`)) {
+                    send({ type: "kick_player", targetId: player.id });
+                  }
+                }}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500/80 hover:bg-red-500 text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                title={`Remove ${player.name}`}
+              >
+                ✕
+              </button>
+            )}
+
             {/* Avatar */}
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -57,7 +76,7 @@ export default function PlayerBar({
                     <span className="text-gray-400 font-normal"> (you)</span>
                   )}
                 </span>
-                {isHost && <span className="text-[10px]">👑</span>}
+                {isPlayerHost && <span className="text-[10px]">👑</span>}
               </div>
               <span className="text-[10px] text-gray-500 font-body">
                 {player.score} pts
