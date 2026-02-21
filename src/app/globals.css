@@ -1,0 +1,218 @@
+@import url("https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Nunito:wght@400;600;700;800;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-dark: #0a0a12;
+  --bg-card: #13131f;
+  --bg-hover: #1a1a2e;
+  --accent-gold: #ffd700;
+  --accent-pink: #ff69b4;
+  --accent-blue: #4169e1;
+  --accent-red: #ff4444;
+  --accent-green: #22c55e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-dark);
+  color: #e0e0e0;
+  font-family: "Nunito", sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Background pattern */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 215, 0, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 105, 180, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(65, 105, 225, 0.02) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Card styles */
+.game-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.game-card-hover:hover {
+  border-color: rgba(255, 215, 0, 0.2);
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.05);
+}
+
+/* Role colors */
+.role-raja {
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  color: #000;
+}
+.role-rani {
+  background: linear-gradient(135deg, #ff69b4, #ff1493);
+  color: #fff;
+}
+.role-chor {
+  background: linear-gradient(135deg, #333, #555);
+  color: #fff;
+}
+.role-police {
+  background: linear-gradient(135deg, #4169e1, #1e40af);
+  color: #fff;
+}
+.role-pradhan {
+  background: linear-gradient(135deg, #8b4513, #a0522d);
+  color: #fff;
+}
+
+/* Chit card */
+.chit-card {
+  width: 200px;
+  height: 280px;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.chit-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.chit-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.chit-front,
+.chit-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  font-family: "Dela Gothic One", cursive;
+}
+
+.chit-front {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.1);
+}
+
+.chit-back {
+  transform: rotateY(180deg);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Push to talk button */
+.ptt-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.ptt-button:hover {
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+.ptt-button.active {
+  border-color: var(--accent-green);
+  background: rgba(34, 197, 94, 0.15);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+.ptt-button.active::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(34, 197, 94, 0.5);
+  animation: ptt-pulse 1s infinite;
+}
+
+@keyframes ptt-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+/* Player talking indicator */
+.talking-ring {
+  animation: talking-ring 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes talking-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+}
+
+/* Confetti */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.confetti-piece {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  top: -10px;
+  animation: confetti-fall 3s ease-in forwards;
+  z-index: 100;
+}

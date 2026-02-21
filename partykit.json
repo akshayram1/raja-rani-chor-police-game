@@ -1,0 +1,5 @@
+{
+  "name": "raja-rani-game",
+  "main": "party/game.ts",
+  "compatibilityDate": "2024-01-01"
+}
