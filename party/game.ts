@@ -137,7 +137,7 @@ function sanitizeStateForPlayer(state: GameState, playerId: string) {
 
 // ─── Server ──────────────────────────────────────────────────────────
 const POLICE_GUESS_TIMER = 30; // seconds
-const NEXT_ROUND_TIMER = 30; // seconds before auto-advancing
+const NEXT_ROUND_TIMER = 10; // seconds before auto-advancing
 
 export default class GameServer implements Party.Server {
   state: GameState;
