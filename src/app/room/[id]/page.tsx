@@ -12,6 +12,7 @@ import ResultPhase from "@/components/ResultPhase";
 import Scoreboard from "@/components/Scoreboard";
 import AudioChat from "@/components/AudioChat";
 import PlayerBar from "@/components/PlayerBar";
+import LeaderboardPanel from "@/components/LeaderboardPanel";
 
 export default function RoomPage() {
   const params = useParams();
@@ -144,32 +145,40 @@ export default function RoomPage() {
         phase={gameState.phase}
       />
 
-      {/* Main game area */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        {gameState.phase === "lobby" && (
-          <Lobby
-            gameState={gameState}
-            isHost={isHost}
-            roomId={roomId}
-            send={send}
-          />
-        )}
-        {gameState.phase === "dealing" && (
-          <DealingPhase gameState={gameState} />
-        )}
-        {(gameState.phase === "reveal_pradhan" ||
-          gameState.phase === "reveal_police") && (
-          <RevealPhase gameState={gameState} send={send} />
-        )}
-        {gameState.phase === "police_guess" && (
-          <PoliceGuessPhase gameState={gameState} send={send} />
-        )}
-        {gameState.phase === "result" && (
-          <ResultPhase gameState={gameState} isHost={isHost} send={send} />
-        )}
-        {gameState.phase === "scoreboard" && (
-          <Scoreboard gameState={gameState} />
-        )}
+      {/* Main content area with leaderboard */}
+      <div className="flex-1 flex">
+        {/* Main game area */}
+        <div className="flex-1 flex items-center justify-center p-4">
+          {gameState.phase === "lobby" && (
+            <Lobby
+              gameState={gameState}
+              isHost={isHost}
+              roomId={roomId}
+              send={send}
+            />
+          )}
+          {gameState.phase === "dealing" && (
+            <DealingPhase gameState={gameState} />
+          )}
+          {(gameState.phase === "reveal_pradhan" ||
+            gameState.phase === "reveal_police") && (
+            <RevealPhase gameState={gameState} send={send} />
+          )}
+          {gameState.phase === "police_guess" && (
+            <PoliceGuessPhase gameState={gameState} send={send} />
+          )}
+          {gameState.phase === "result" && (
+            <ResultPhase gameState={gameState} isHost={isHost} send={send} />
+          )}
+          {gameState.phase === "scoreboard" && (
+            <Scoreboard gameState={gameState} />
+          )}
+        </div>
+
+        {/* Right panel - Leaderboard (always visible) */}
+        <div className="hidden md:block w-64 p-4 border-l border-white/5">
+          <LeaderboardPanel gameState={gameState} />
+        </div>
       </div>
 
       {/* Audio chat */}

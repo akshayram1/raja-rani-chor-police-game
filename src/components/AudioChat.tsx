@@ -191,29 +191,63 @@ export default function AudioChat({ socket, gameState, send }: AudioChatProps) {
     send({ type: "audio_state", talking: newTalkingState });
   }, [isTalking, send]);
 
-  // Keyboard shortcut (M key to toggle mic)
+  // Push-to-talk handlers
+  const startTalking = useCallback(() => {
+    if (!localStreamRef.current) return;
+    localStreamRef.current.getAudioTracks().forEach((track) => {
+      track.enabled = true;
+    });
+    setIsTalking(true);
+    send({ type: "audio_state", talking: true });
+  }, [send]);
+
+  const stopTalking = useCallback(() => {
+    if (!localStreamRef.current) return;
+    localStreamRef.current.getAudioTracks().forEach((track) => {
+      track.enabled = false;
+    });
+    setIsTalking(false);
+    send({ type: "audio_state", talking: false });
+  }, [send]);
+
+  // Keyboard shortcuts: M to toggle, Space to push-to-talk
   useEffect(() => {
     if (!audioEnabled) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if typing in an input
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      )
+        return;
+
       if (e.code === "KeyM" && !e.repeat) {
-        // Don't trigger if typing in an input
-        if (
-          e.target instanceof HTMLInputElement ||
-          e.target instanceof HTMLTextAreaElement
-        )
-          return;
         e.preventDefault();
         toggleMic();
+      }
+
+      if (e.code === "Space" && !e.repeat && !isTalking) {
+        e.preventDefault();
+        startTalking();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        stopTalking();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [audioEnabled, toggleMic]);
+  }, [audioEnabled, isTalking, toggleMic, startTalking, stopTalking]);
 
   // Cleanup
   useEffect(() => {
@@ -227,7 +261,7 @@ export default function AudioChat({ socket, gameState, send }: AudioChatProps) {
   }, []);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
       {!audioEnabled ? (
         <button
           onClick={enableAudio}
@@ -237,23 +271,50 @@ export default function AudioChat({ socket, gameState, send }: AudioChatProps) {
           <span className="text-xl">🎙️</span>
         </button>
       ) : (
-        <button
-          onClick={toggleMic}
-          className={`ptt-button ${isTalking ? "active" : ""}`}
-          title={isTalking ? "Click to mute (or press M)" : "Click to unmute (or press M)"}
-        >
-          <span className="text-xl">{isTalking ? "🎙️" : "🔇"}</span>
-        </button>
-      )}
+        <>
+          {/* Status label */}
+          <div className="text-[10px] text-gray-500 font-body whitespace-nowrap">
+            {isTalking ? "🔴 Mic On" : "Mic Off"}
+          </div>
 
-      {audioEnabled && (
-        <div className="absolute -top-8 right-0 text-[10px] text-gray-500 font-body whitespace-nowrap">
-          {isTalking ? "🔴 Mic On" : "Mic Off"}
-        </div>
+          <div className="flex items-center gap-2">
+            {/* Push-to-talk button */}
+            <button
+              onMouseDown={startTalking}
+              onMouseUp={stopTalking}
+              onMouseLeave={stopTalking}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                startTalking();
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                stopTalking();
+              }}
+              className={`ptt-button ${isTalking ? "active" : ""}`}
+              title="Hold to talk (or hold Space)"
+            >
+              <span className="text-xl">🗣️</span>
+            </button>
+
+            {/* Mic toggle button */}
+            <button
+              onClick={toggleMic}
+              className={`ptt-button ${isTalking ? "active" : ""}`}
+              title={isTalking ? "Click to mute (M)" : "Click to unmute (M)"}
+            >
+              <span className="text-xl">{isTalking ? "🎙️" : "🔇"}</span>
+            </button>
+          </div>
+
+          <div className="text-[9px] text-gray-600 font-body whitespace-nowrap">
+            Hold 🗣️ or Space | Click 🎙️ or M
+          </div>
+        </>
       )}
 
       {micPermission === "denied" && (
-        <div className="absolute -top-10 right-0 text-[10px] text-red-400 font-body whitespace-nowrap bg-bg-dark px-2 py-1 rounded">
+        <div className="text-[10px] text-red-400 font-body whitespace-nowrap bg-bg-dark px-2 py-1 rounded">
           Mic access denied
         </div>
       )}
