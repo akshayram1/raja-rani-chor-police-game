@@ -4,9 +4,11 @@ import { GameState, ROLE_INFO, Role } from "@/lib/types";
 
 interface ScoreboardProps {
   gameState: GameState;
+  isHost: boolean;
+  send: (data: any) => void;
 }
 
-export default function Scoreboard({ gameState }: ScoreboardProps) {
+export default function Scoreboard({ gameState, isHost, send }: ScoreboardProps) {
   const sortedPlayers = Object.values(gameState.players).sort(
     (a, b) => b.score - a.score
   );
@@ -78,12 +80,18 @@ export default function Scoreboard({ gameState }: ScoreboardProps) {
       </div>
 
       {/* Play again */}
-      <a
-        href="/"
-        className="block w-full py-3 rounded-xl font-bold font-body text-center text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 transition-all"
-      >
-        Play Again 🎮
-      </a>
+      {isHost ? (
+        <button
+          onClick={() => send({ type: "play_again" })}
+          className="w-full py-3 rounded-xl font-bold font-body text-center text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 transition-all"
+        >
+          Play Again 🎮
+        </button>
+      ) : (
+        <p className="text-center text-gray-500 text-sm font-body">
+          Waiting for host to start a new game...
+        </p>
+      )}
     </div>
   );
 }

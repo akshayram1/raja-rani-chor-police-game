@@ -31,6 +31,7 @@ interface GameState {
   guessCorrect?: boolean;
   maxPlayers: number;
   policeGuessDeadline?: number; // timestamp when police guess timer expires
+  nextRoundDeadline?: number; // timestamp when next round auto-starts
 }
 
 // ─── Points ──────────────────────────────────────────────────────────
@@ -83,6 +84,7 @@ function sanitizeStateForPlayer(state: GameState, playerId: string) {
     policeGuess: state.policeGuess,
     guessCorrect: state.guessCorrect,
     policeGuessDeadline: state.policeGuessDeadline,
+    nextRoundDeadline: state.nextRoundDeadline,
     players: {} as Record<string, any>,
   };
 
@@ -135,10 +137,12 @@ function sanitizeStateForPlayer(state: GameState, playerId: string) {
 
 // ─── Server ──────────────────────────────────────────────────────────
 const POLICE_GUESS_TIMER = 30; // seconds
+const NEXT_ROUND_TIMER = 30; // seconds before auto-advancing
 
 export default class GameServer implements Party.Server {
   state: GameState;
   policeTimerHandle?: ReturnType<typeof setTimeout>;
+  nextRoundTimerHandle?: ReturnType<typeof setTimeout>;
 
   constructor(readonly room: Party.Room) {
     this.state = getInitialState();
@@ -215,6 +219,9 @@ export default class GameServer implements Party.Server {
         break;
       case "end_game":
         this.handleEndGame(sender.id);
+        break;
+      case "play_again":
+        this.handlePlayAgain(sender.id);
         break;
       case "set_max_players":
         if (sender.id === this.state.hostId && this.state.phase === "lobby") {
@@ -370,11 +377,38 @@ export default class GameServer implements Party.Server {
     }
 
     this.state.phase = "result";
+
+    // Start 30s auto-advance timer
+    this.clearNextRoundTimer();
+    this.state.nextRoundDeadline = Date.now() + NEXT_ROUND_TIMER * 1000;
+    this.nextRoundTimerHandle = setTimeout(() => {
+      if (this.state.phase !== "result") return;
+      if (this.state.round >= this.state.totalRounds) {
+        this.state.phase = "scoreboard";
+        this.state.nextRoundDeadline = undefined;
+        this.broadcastState();
+      } else {
+        this.autoNextRound();
+      }
+    }, NEXT_ROUND_TIMER * 1000);
+
+    this.broadcastState();
+  }
+
+  autoNextRound() {
+    this.clearNextRoundTimer();
+    this.state.phase = "lobby";
+    this.state.currentRoles = {};
+    this.state.policeId = undefined;
+    this.state.pradhanId = undefined;
+    this.state.policeGuess = undefined;
+    this.state.guessCorrect = undefined;
     this.broadcastState();
   }
 
   handleNextRound(senderId: string) {
     if (senderId !== this.state.hostId) return;
+    this.clearNextRoundTimer();
     // If we've played all rounds, go to scoreboard instead
     if (this.state.round >= this.state.totalRounds) {
       this.state.phase = "scoreboard";
@@ -392,7 +426,23 @@ export default class GameServer implements Party.Server {
 
   handleEndGame(senderId: string) {
     if (senderId !== this.state.hostId) return;
+    this.clearNextRoundTimer();
     this.state.phase = "scoreboard";
+    this.broadcastState();
+  }
+
+  handlePlayAgain(senderId: string) {
+    // Reset entire game state but keep players
+    const players: Record<string, Player> = {};
+    for (const [id, player] of Object.entries(this.state.players)) {
+      players[id] = { ...player, score: 0, role: undefined };
+    }
+    this.clearNextRoundTimer();
+    this.state = {
+      ...getInitialState(),
+      players,
+      hostId: this.state.hostId,
+    };
     this.broadcastState();
   }
 
@@ -402,6 +452,14 @@ export default class GameServer implements Party.Server {
       sanitized.yourId = conn.id;
       conn.send(JSON.stringify({ type: "state", data: sanitized }));
     }
+  }
+
+  clearNextRoundTimer() {
+    if (this.nextRoundTimerHandle) {
+      clearTimeout(this.nextRoundTimerHandle);
+      this.nextRoundTimerHandle = undefined;
+    }
+    this.state.nextRoundDeadline = undefined;
   }
 
   broadcast(message: string) {

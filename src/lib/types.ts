@@ -29,6 +29,7 @@ export interface GameState {
   policeGuess?: string;
   guessCorrect?: boolean;
   policeGuessDeadline?: number;
+  nextRoundDeadline?: number;
   yourId?: string;
 }
 

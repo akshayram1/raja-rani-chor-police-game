@@ -15,6 +15,7 @@ export default function ResultPhase({
   send,
 }: ResultPhaseProps) {
   const [showConfetti, setShowConfetti] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const correct = gameState.guessCorrect;
   const policePlayer = gameState.policeId
     ? gameState.players[gameState.policeId]
@@ -30,6 +31,21 @@ export default function ResultPhase({
       return () => clearTimeout(timer);
     }
   }, [correct]);
+
+  // Countdown for auto next round
+  useEffect(() => {
+    if (!gameState.nextRoundDeadline) {
+      setCountdown(null);
+      return;
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((gameState.nextRoundDeadline! - Date.now()) / 1000));
+      setCountdown(remaining);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [gameState.nextRoundDeadline]);
 
   // Sort players by score for display
   const sortedPlayers = Object.values(gameState.players).sort(
@@ -127,6 +143,22 @@ export default function ResultPhase({
         })}
       </div>
 
+      {/* Auto-advance countdown */}
+      {countdown !== null && countdown > 0 && (
+        <div className="text-center">
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-body ${
+            countdown <= 5 ? 'bg-red-500/20 text-red-400' : countdown <= 10 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/10 text-gray-300'
+          }`}>
+            <span>⏱️</span>
+            <span>
+              {gameState.round >= gameState.totalRounds
+                ? `Final scoreboard in ${countdown}s`
+                : `Next round in ${countdown}s`}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Host controls */}
       {isHost && (
         <div className="space-y-2">
@@ -138,7 +170,7 @@ export default function ResultPhase({
               onClick={() => send({ type: "end_game" })}
               className="w-full py-3 rounded-xl font-bold font-body text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 transition-all"
             >
-              🏆 View Final Scoreboard
+              🏆 View Final Scoreboard Now
             </button>
           ) : (
             <div className="flex gap-3">
@@ -146,7 +178,7 @@ export default function ResultPhase({
                 onClick={() => send({ type: "next_round" })}
                 className="flex-1 py-3 rounded-xl font-bold font-body text-black bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 transition-all"
               >
-                Next Round ▶️
+                Next Round Now ▶️
               </button>
               <button
                 onClick={() => send({ type: "end_game" })}
@@ -161,7 +193,7 @@ export default function ResultPhase({
 
       {!isHost && (
         <p className="text-center text-gray-500 text-xs font-body">
-          Round {gameState.round} of {gameState.totalRounds} — Waiting for host...
+          Round {gameState.round} of {gameState.totalRounds}{countdown !== null ? ` — Auto-advancing in ${countdown}s` : ' — Waiting for host...'}
         </p>
       )}
     </div>

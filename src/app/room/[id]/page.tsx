@@ -175,7 +175,7 @@ export default function RoomPage() {
             <ResultPhase gameState={gameState} isHost={isHost} send={send} />
           )}
           {gameState.phase === "scoreboard" && (
-            <Scoreboard gameState={gameState} />
+            <Scoreboard gameState={gameState} isHost={isHost} send={send} />
           )}
         </div>
 
